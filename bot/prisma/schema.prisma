@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String       @id
+  role       UserRole     @default(client)
+  sumTmt     Float        @default(0)
+  sumUsdt    Float        @default(0)
+  walNum     String       @unique
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  orders     Order[]
+  SummUpdate SummUpdate[]
+}
+
+model Admin {
+  id         Int          @id @default(autoincrement())
+  tgId       String       @unique
+  nickName   String       @unique
+  numbers    Int[]
+  binanceId  Int
+  tonWallet  String
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime
+  orders     Order[]
+  SummUpdate SummUpdate[]
+}
+
+model Product {
+  id        Int         @id @default(autoincrement())
+  name      ProductType
+  amount    Int
+  priceTMT  Float
+  priceUSDT Float
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  orders    Order[]
+}
+
+model Order {
+  id             Int             @id @default(autoincrement())
+  userId         String
+  receiver       String
+  paynum         String?
+  productId      Int
+  mssgIds        Int[]
+  courierid      String?
+  status         OrderStatus
+  payment        PaymentMethod
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  courier        Admin?          @relation(fields: [courierid], references: [tgId])
+  product        Product         @relation(fields: [productId], references: [id])
+  user           User            @relation(fields: [userId], references: [id])
+  tonTransaction TonTransaction?
+}
+
+model TonTransaction {
+  id        String   @id @default(uuid())
+  price     Float
+  orderId   Int      @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  order     Order    @relation(fields: [orderId], references: [id])
+}
+
+model SummUpdate {
+  id        Int           @id @default(autoincrement())
+  cashierid String
+  clientid  String
+  currency  PaymentMethod
+  sum       Float
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  Admin     Admin         @relation(fields: [cashierid], references: [tgId])
+  User      User          @relation(fields: [clientid], references: [id])
+}
+
+enum OrderStatus {
+  pending
+  accepted
+  paid
+  delivering
+  completed
+  cancelled
+  expired
+}
+
+enum PaymentMethod {
+  USDT
+  TON
+  TMT
+}
+
+enum UserRole {
+  client
+  admin
+}
+
+enum ProductType {
+  jtn
+  star
+  tgprem
+  uc
+}
