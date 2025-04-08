@@ -1,5 +1,4 @@
-import { PaymentMethod } from "@prisma/client";
-import { prisma } from "../../../../prisma/prismaSett";
+import { PaymentMethod, prisma } from "../../../../prisma/prismaSett";
 import { cmcApi } from "@/lib/fetchs";
 import { toncoinId } from "@/lib/settings";
 import { orderScript } from "../../../../bot/bot";

@@ -1,7 +1,7 @@
 //message returners
 
 import { ProductType } from "@prisma/client";
-import { prdctDsplyNme } from "./settings";
+import { prdctDsplyNme, statusIcons } from "./settings";
 
 // hasap message
 export function hspMsg(hnum: string, sum1: number, sum2: number) {
@@ -35,18 +35,18 @@ export function prdctDtlMssg(
       product,
       amount
    )} \n ${
-      !buyerId ? " " : `Kimden: ${userLink(buyerId, byrName)} \n`
+      !buyerId ? " " : `Kimden: ${userLink(Number(buyerId), byrName)} \n`
    }${toWhere(
       product
    )}: ${receiver} \n Jemi töleg: <b>${total} ${currency} </b>`;
 }
 //asking confirmation meesage
 export function prdctCfrmtn() {
-   return `<b>⚠️ Sargyt size degişli bolsa tassyklaň.</b>`;
+   return `<b>${statusIcons.care[6]} Sargyt size degişli bolsa tassyklaň.</b>`;
 }
 // order delivering by admin
 export function ordrDlvrng(tgId: number | string, firstname?: string) {
-   return `✔️ <a href="tg://user?id=${tgId}">${
+   return `${statusIcons.care[5]} <a href="tg://user?id=${tgId}">${
       firstname ? firstname : "Admin"
    }</a> sargydy tabşyrýar.`;
 }
@@ -56,16 +56,16 @@ export function ordrDclngMssgFnc(
    adminNick: string | boolean,
    reason?: string
 ) {
-   return `❌ <a href="tg://user?id=${adminId}">${
+   return `${statusIcons.no[2]} <a href="tg://user?id=${adminId}">${
       adminNick ? adminNick : "Admin"
    }</a> sargydy ýatyrdy! ${reason ? `\n Sebäbi: ${reason} ` : ""}`;
 }
 // order delivered by admin
 export function ordrCmltdMssgFnc(adminId: number, adminNick?: string) {
-   return `✅ ${userLink(adminId, adminNick)} sargydy tabşyrdy!`;
+   return `${statusIcons.yes[2]} ${userLink(adminId, adminNick)} sargydy tabşyrdy!`;
 }
 // user link
-export function userLink(id: number | string, nick?: string) {
+export function userLink(id: number , nick?: string) {
    return `<a href="tg://user?id=${id}">${nick ? nick : id}</a>`;
 }
 export function toWhere(product: ProductType) {

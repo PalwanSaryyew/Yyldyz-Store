@@ -1,10 +1,21 @@
-import { ProductType } from "@prisma/client";
+import { PaymentMethod, ProductType, SummUpdate, User } from "@prisma/client";
 import { Bot } from "grammy";
 
 // envs
 export const bot = new Bot(process.env.BOT_TOKEN || "");
 export const adminidS = [process.env.PALWAN || "", process.env.HAJY || ""];
-
+interface SumAddState {
+   mssgId: number;
+   walNum: User["walNum"];
+   crrncy: PaymentMethod | "";
+   sum: SummUpdate["sum"];
+}
+interface OrdrMsgEdtSt {
+   mssgIds: number[];
+}
+export const reasonStates = new Map();
+export const sumAddStates: Map<number | undefined, SumAddState> = new Map();
+export const ordrMsgEdtStts: Map<number, OrdrMsgEdtSt> = new Map();
 // functions
 // random number genrator
 export function rndmNmrGnrtr(l: number): string {
@@ -28,3 +39,12 @@ export function prdctDsplyNme(
       ? "UC"
       : name;
 }
+
+export const editSummComand = "eylenbeylen";
+
+export const statusIcons = {
+   yes: ["✔️", "☑️", "✅", "🟢"],
+   no: ["❎", "✖️", "❌", "🔴", "⭕"],
+   care: ["❕", "ℹ️", "❗", "‼️", "⁉️", "🟡", "⚠️", "🟠"],
+   wait: ['📦📨⌛🚫⛔🕥🚩⚡🛒📌📍⏳⌚⏱️⏲️'],
+};

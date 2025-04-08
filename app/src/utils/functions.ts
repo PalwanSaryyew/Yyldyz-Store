@@ -1,4 +1,5 @@
-import { ProductType } from "@prisma/client";
+import { ProductType } from "../../prisma/prismaSett";
+
 export function rndmNmrGnrtr(l: number): string {
    let result = "";
    for (let i = 0; i < l; i++) {

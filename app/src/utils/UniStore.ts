@@ -1,5 +1,5 @@
-import { PaymentMethod, Product } from "@prisma/client";
 import { create } from "zustand";
+import { PaymentMethod, Product } from "../../prisma/prismaSett";
 
 interface ModalState {
    isOpen: number;

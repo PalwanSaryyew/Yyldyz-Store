@@ -18,5 +18,8 @@
    },
    "devDependencies": {
       "@types/node": "^22.13.5"
-   }
+   },
+   "prisma": {
+    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+  }
 }

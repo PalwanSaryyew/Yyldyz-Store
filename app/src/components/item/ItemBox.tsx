@@ -1,10 +1,9 @@
-
-import { Product } from "@prisma/client";
 import ItemModal from "./ItemModal";
 import ItemModalOpener from "./ItemModalOpener";
 import ItemPrice from "./ItemPrice";
 import ItemIcon from "./ItemIcon";
 import ItemAmount from "./ItemAmount";
+import { Product } from "../../../prisma/prismaSett";
 interface ItemBoxProps {
    item: Product;
    tonPrice: number;
@@ -17,10 +16,10 @@ const ItemBox = ({ item, tonPrice }: ItemBoxProps) => {
             {/* left */}
             <div className="flex items-center gap-4">
                <div className="">
-                  <ItemIcon/>
+                  <ItemIcon />
                </div>
                <div className="text-[1.3rem] font-semibold text-gray-600">
-                  <ItemAmount amount={item.amount}/>
+                  <ItemAmount amount={item.amount} />
                </div>
             </div>
 

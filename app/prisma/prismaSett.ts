@@ -1,16 +1,35 @@
-import { PrismaClient } from "@prisma/client";
+import {
+   prisma,
+   Admin,
+   Order,
+   Product,
+   SummUpdate,
+   TonTransaction,
+   User,
+   PrismaPromise,
+   OrderStatus,
+   PaymentMethod,
+   ProductType,
+   UserRole,
+   $Enums,
+   Prisma,
+} from "bot/prisma/prismaSett";
 
-const prismaClientSingleton = () => {
-   return new PrismaClient();
+export {
+   prisma,
+   OrderStatus,
+   PaymentMethod,
+   ProductType,
+   UserRole,
+   $Enums,
+   Prisma,
 };
-
-declare const globalThis: {
-   prismaGlobal: ReturnType<typeof prismaClientSingleton>;
-} & typeof global;
-
-const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
-
-export { prisma };
-
-if (process.env.NODE_ENV !== "production") globalThis.prismaGlobal = prisma;
-
+export type {
+   Admin,
+   Order,
+   Product,
+   SummUpdate,
+   TonTransaction,
+   User,
+   PrismaPromise,
+};

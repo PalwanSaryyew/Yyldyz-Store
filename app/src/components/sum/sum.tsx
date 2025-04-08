@@ -1,5 +1,5 @@
 import { cn } from "@/utils/tailwindMerge";
-import { PaymentMethod } from "@prisma/client";
+import { PaymentMethod } from "../../../prisma/prismaSett";
 
 const Sum = ({ sum, crrncy }: { sum: number; crrncy: PaymentMethod }) => {
    return (

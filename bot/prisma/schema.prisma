@@ -12,11 +12,11 @@ model User {
   role       UserRole     @default(client)
   sumTmt     Float        @default(0)
   sumUsdt    Float        @default(0)
-  walNum     String       @unique
+  walNum     String       @unique()
+  orders     Order[]
+  summUpdate SummUpdate[]
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
-  orders     Order[]
-  SummUpdate SummUpdate[]
 }
 
 model Admin {
@@ -26,10 +26,22 @@ model Admin {
   numbers    Int[]
   binanceId  Int
   tonWallet  String
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime
   orders     Order[]
-  SummUpdate SummUpdate[]
+  summUpdate SummUpdate[]
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+}
+
+model SummUpdate {
+  id        Int           @id @default(autoincrement())
+  cashierid String
+  cashier   Admin         @relation(fields: [cashierid], references: [tgId])
+  clientid  String
+  client    User          @relation(fields: [clientid], references: [id])
+  currency  PaymentMethod
+  sum       Float
+  updatedAt DateTime      @updatedAt
+  createdAt DateTime      @default(now())
 }
 
 model Product {
@@ -38,9 +50,9 @@ model Product {
   amount    Int
   priceTMT  Float
   priceUSDT Float
+  orders    Order[]
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
-  orders    Order[]
 }
 
 model Order {
@@ -51,35 +63,23 @@ model Order {
   productId      Int
   mssgIds        Int[]
   courierid      String?
+  courier        Admin?          @relation(fields: [courierid], references: [tgId])
+  tonTransaction TonTransaction?
   status         OrderStatus
   payment        PaymentMethod
+  user           User            @relation(fields: [userId], references: [id])
+  product        Product         @relation(fields: [productId], references: [id])
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
-  courier        Admin?          @relation(fields: [courierid], references: [tgId])
-  product        Product         @relation(fields: [productId], references: [id])
-  user           User            @relation(fields: [userId], references: [id])
-  tonTransaction TonTransaction?
 }
 
 model TonTransaction {
   id        String   @id @default(uuid())
   price     Float
   orderId   Int      @unique
+  order     Order    @relation(fields: [orderId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  order     Order    @relation(fields: [orderId], references: [id])
-}
-
-model SummUpdate {
-  id        Int           @id @default(autoincrement())
-  cashierid String
-  clientid  String
-  currency  PaymentMethod
-  sum       Float
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  Admin     Admin         @relation(fields: [cashierid], references: [tgId])
-  User      User          @relation(fields: [clientid], references: [id])
 }
 
 enum OrderStatus {

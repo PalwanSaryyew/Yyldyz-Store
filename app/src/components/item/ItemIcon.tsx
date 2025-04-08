@@ -1,7 +1,7 @@
 "use client";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { ProductType } from "@prisma/client";
+import { ProductType } from "../../../prisma/prismaSett";
 const ItemIcon = () => {
    const currentPath = usePathname();
 

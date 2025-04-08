@@ -1,7 +1,15 @@
 import { InlineKeyboard } from "grammy";
 import { prisma } from "./prisma/prismaSett";
-import { adminidS, bot } from "./src/settings";
-import { PaymentMethod, SummUpdate, User } from "@prisma/client";
+import {
+   adminidS,
+   bot,
+   editSummComand,
+   ordrMsgEdtStts,
+   reasonStates,
+   statusIcons,
+   sumAddStates,
+} from "./src/settings";
+import { PaymentMethod } from "@prisma/client";
 import { err_6, err_7 } from "./src/errCodes";
 import { adminValid, chatIdV, userValid, validator } from "./src/validators";
 import {
@@ -12,23 +20,16 @@ import {
    ordrIdMssgFnc,
    prdctDtlMssg,
    sspcsCaseMs,
+   userLink,
 } from "./src/messages";
 import { cnclAddSumBtnn, dlvrOrdrKybrd } from "./src/keyboards";
-// holder states
-interface SumAddState {
-   mssgId: number;
-   walNum: User["walNum"];
-   crrncy: PaymentMethod | "";
-   sum: SummUpdate["sum"];
-}
-interface OrdrMsgEdtSt {
-   mssgIds: number[];
-}
-const reasonStates = new Map();
-const sumAddStates: Map<number | undefined, SumAddState> = new Map();
-const ordrMsgEdtStts: Map<number, OrdrMsgEdtSt> = new Map();
 
 /* start command */
+bot.command("test", async (ctx) => {
+   ctx.reply(`${statusIcons.yes} \n ${statusIcons.no} \n ${statusIcons.care}`, {
+      parse_mode: "HTML",
+   });
+});
 bot.command("start", async (ctx) => {
    const userID = ctx.from?.id;
    // çreating user to do geting message permission
@@ -50,19 +51,17 @@ bot.command("hasap", async (ctx) => {
    // geting user
    const user = await userValid(userID);
    if ("error" in user) {
-      // user errMess tipinde bolsa
       return ctx.reply(
          user.mssg +
             " \n Täzeden synanşyň /hasap \n ýada /start berip boty başladyň"
       );
    }
-   // user User tipinde bolsa
    ctx.reply(hspMsg(user.walNum, user.sumTmt, user.sumUsdt), {
       reply_markup: new InlineKeyboard().copyText(user.walNum, user.walNum),
       parse_mode: "HTML",
    });
 });
-// if order aççepted by the çlient
+// if order aççept by the çlient
 bot.callbackQuery(/acceptOrder_(.+)/, async (ctx) => {
    const orderId = parseInt(ctx.match[1]);
    const clntID = ctx.from.id;
@@ -92,7 +91,6 @@ bot.callbackQuery(/acceptOrder_(.+)/, async (ctx) => {
    }
    // preparing messages
    const ordIdMssg = ordrIdMssgFnc(order.id);
-   const clntmssg = "✔️ Sargydyňyz mümkin bolan iň gysga wagtda gowşurylar.";
    try {
       // sending messages to admins and collecting messages ids orderly
       const mssgIds: number[] = [];
@@ -118,7 +116,10 @@ bot.callbackQuery(/acceptOrder_(.+)/, async (ctx) => {
          mssgIds.push(data.message_id);
       }
       ordrMsgEdtStts.set(orderId, { mssgIds: mssgIds });
-
+      
+      const clntmssg =
+         statusIcons.care[1] +
+         " Sargydyňyz alyndy, mümkin bolan iň gysga wagtda size gowşurylar.";
       await ctx.editMessageText(
          `${ordIdMssg} <blockquote expandable>${prdctDtlMssg(
             order.product.name,
@@ -187,7 +188,7 @@ bot.callbackQuery(/cancelOrder_(.+)/, async (ctx) => {
    }
    // preparing messages
    const ordIdMssg = ordrIdMssgFnc(order.id);
-   const clntmssg = "✖️ Sargyt ýatyryldy.";
+   const clntmssg = statusIcons.no[0] + " Sargyt ýatyryldy.";
    try {
       await ctx.editMessageText(`${ordIdMssg} ${clntmssg}`, {
          parse_mode: "HTML",
@@ -218,7 +219,7 @@ bot.callbackQuery(/deliverOrder_(.+)/, async (ctx) => {
    // update and check order
    const order = await validator(
       orderId,
-      ["accepted"],
+      ["accepted", "paid"],
       "delivering",
       adminId.toString()
    );
@@ -255,9 +256,15 @@ bot.callbackQuery(/deliverOrder_(.+)/, async (ctx) => {
                reply_markup:
                   order.courierid === adminidS[i]
                      ? new InlineKeyboard()
-                          .text("Tabşyrdym ☑️", "orderDelivered_" + order.id)
+                          .text(
+                             "Tabşyrdym " + statusIcons.yes[2],
+                             "orderDelivered_" + order.id
+                          )
                           .row()
-                          .text("Ýatyr ✖️", "declineOrder_" + order.id)
+                          .text(
+                             "Ýatyr " + statusIcons.no[2],
+                             "declineOrder_" + order.id
+                          )
                           .row()
                           .copyText(order.receiver, order.receiver)
                      : undefined,
@@ -326,7 +333,7 @@ bot.callbackQuery(/declineOrder_(.+)/, async (ctx) => {
    }
 
    // preparing messages
-   const askRsnMssg = "<b>❗Sargydyň ýatyrylmagynyň sebäbini ýazyň!</b>";
+   const askRsnMssg = `<b>${statusIcons.care[4]} Sargydyň ýatyrylmagynyň sebäbini ýazyň?!</b>`;
    const dslndMess = ordrDclngMssgFnc(adminId, ctx.from.first_name);
    const ordIdMssg = ordrIdMssgFnc(orderId);
    try {
@@ -410,7 +417,7 @@ bot.callbackQuery(/orderDelivered_(.+)/, async (ctx) => {
 
       await bot.api.sendMessage(
          order.userId,
-         `${ordIdmssg} ✅ Sargadyňyz Tabşyryldy`,
+         `${ordIdmssg} ${statusIcons.wait[0]} Sargadyňyz Tabşyryldy`,
          {
             parse_mode: "HTML",
          }
@@ -426,7 +433,7 @@ bot.callbackQuery(/orderDelivered_(.+)/, async (ctx) => {
 });
 
 // add sum comand
-bot.command("add", async (ctx) => {
+bot.command(editSummComand, async (ctx) => {
    const userID = ctx.from?.id;
    const isAdmin = adminValid(userID);
    if (sumAddStates.get(userID)) {
@@ -437,13 +444,18 @@ bot.command("add", async (ctx) => {
       adminidS.map(async (adminId) => {
          await ctx.api.sendMessage(
             adminId,
-            sspcsCaseMs(isAdmin.mssg, "/add", ctx.from?.username, ctx.from?.id)
+            sspcsCaseMs(
+               isAdmin.mssg,
+               "/" + editSummComand,
+               ctx.from?.username,
+               ctx.from?.id
+            )
          );
       });
       return ctx.reply(isAdmin.mssg);
    }
    // asking walnum
-   const { message_id } = await ctx.reply(`Hasap Nomer: ?`, {
+   const { message_id } = await ctx.reply(`Hasap nomer: ?`, {
       reply_markup: cnclAddSumBtnn(),
    });
    // open the state
@@ -465,7 +477,12 @@ bot.callbackQuery(/^choose_(\w+)$/, (ctx) => {
       adminidS.map(async (adminId) => {
          await ctx.api.sendMessage(
             adminId,
-            sspcsCaseMs(isAdmin.mssg, "/add", ctx.from?.username, ctx.from?.id)
+            sspcsCaseMs(
+               isAdmin.mssg,
+               "/" + editSummComand,
+               ctx.from?.username,
+               ctx.from?.id
+            )
          );
       });
       return ctx.reply(isAdmin.mssg);
@@ -494,7 +511,12 @@ bot.callbackQuery("complateAdd", async (ctx) => {
       adminidS.map(async (adminId) => {
          await ctx.api.sendMessage(
             adminId,
-            sspcsCaseMs(isAdmin.mssg, "/add", ctx.from?.username, ctx.from?.id)
+            sspcsCaseMs(
+               isAdmin.mssg,
+               "/" + editSummComand,
+               ctx.from?.username,
+               ctx.from?.id
+            )
          );
       });
       return ctx.reply(isAdmin.mssg);
@@ -508,7 +530,8 @@ bot.callbackQuery("complateAdd", async (ctx) => {
    if (!user) {
       sumAddStates.delete(adminId);
       return ctx.editMessageText(
-         "Yalnys beyle hasap nomer tapylmady, tazeden synansyn /add"
+         "Yalnys beyle hasap nomer tapylmady, tazeden synansyn /" +
+            editSummComand
       );
    }
    // validating if sum is correct
@@ -516,14 +539,17 @@ bot.callbackQuery("complateAdd", async (ctx) => {
    if (fltdSum === undefined || isNaN(fltdSum) || fltdSum === 0) {
       sumAddStates.delete(adminId);
       return ctx.editMessageText(
-         "Yalnys pul mukdary dogry yazylmady, tazeden synansyn /add"
+         "Yalnys pul mukdary dogry yazylmady, tazeden synansyn /" +
+            editSummComand
       );
    }
    // is choosed currency correct
    const chsdCrrnc = sumAddState?.crrncy;
    if (typeof chsdCrrnc !== "string" || !(chsdCrrnc in PaymentMethod)) {
       sumAddStates.delete(adminId);
-      return ctx.editMessageText("Yalnys Walyuta, tazeden synansyn /add");
+      return ctx.editMessageText(
+         "Yalnys Walyuta, tazeden synansyn /" + editSummComand
+      );
    }
    // choosing currency
    const data =
@@ -540,9 +566,11 @@ bot.callbackQuery("complateAdd", async (ctx) => {
    // if updating went wrong
    if (!addSum) {
       sumAddStates.delete(adminId);
-      return ctx.editMessageText("User Db update error, tazeden synansyn /add");
+      return ctx.editMessageText(
+         "User Db update error, tazeden synansyn /" + editSummComand
+      );
    }
-  
+
    // save transaction to db
    const save = await prisma.summUpdate.create({
       data: {
@@ -566,7 +594,12 @@ bot.callbackQuery("complateAdd", async (ctx) => {
       adminidS.map((adminId) => {
          ctx.api.sendMessage(
             adminId,
-            `Hasap +/- \n Kimden: <a href="tg://user?id=${adminId}">${ctx.from.first_name}</a> \n Kime: <a href="tg://user?id=${user.id}">${user.id}</a> \n Hasap: ${user.walNum} \n Mukdar: ${save.sum} ${save.currency}`,
+            `Hasap +/- \n Kimden: ${userLink(
+               Number(adminId),
+               ctx.from.first_name
+            )} \n Nirä: ${userLink(Number(user.id), user.walNum)} \n Mukdar: ${
+               save.sum
+            } ${save.currency}`,
             {
                parse_mode: "HTML",
             }
@@ -595,7 +628,12 @@ bot.callbackQuery("declineAdd", async (ctx) => {
       adminidS.map(async (adminId) => {
          await ctx.api.sendMessage(
             adminId,
-            sspcsCaseMs(isAdmin.mssg, "/add", ctx.from?.username, ctx.from?.id)
+            sspcsCaseMs(
+               isAdmin.mssg,
+               "/" + editSummComand,
+               ctx.from?.username,
+               ctx.from?.id
+            )
          );
       });
       return ctx.reply(isAdmin.mssg);
@@ -607,7 +645,7 @@ bot.callbackQuery("declineAdd", async (ctx) => {
       );
    }
    sumAddStates.delete(adminId);
-   return await ctx.editMessageText("Hasap goşmak ýatyryldy");
+   return await ctx.editMessageText("Hasap goşmak ýatyryldy.");
 });
 
 bot.on("message", async (ctx) => {
@@ -659,7 +697,7 @@ bot.on("message", async (ctx) => {
                   .text("TMT", "choose_TMT")
                   .text("USDT", "choose_USDT")
                   .row()
-                  .text("Ýatyr✖️", "declineAdd"),
+                  .text("Goýbolsun " + statusIcons.care[7], "declineAdd"),
             }
          );
          return await ctx.deleteMessage();

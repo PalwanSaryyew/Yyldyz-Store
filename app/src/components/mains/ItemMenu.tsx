@@ -1,10 +1,10 @@
 "use client";
 import { paths } from "@/lib/settings";
 import { cn } from "@/utils/tailwindMerge";
-import { ProductType } from "@prisma/client";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ProductType } from "../../../prisma/prismaSett";
 
 const ItemMenu = () => {
    const currentPath = usePathname();

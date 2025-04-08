@@ -1,108 +1,217 @@
-import { ourTonAddress } from "@/lib/settings";
 import { prisma } from "../../../../prisma/prismaSett";
-import { noticeAdmins, noticeClient } from "../../../../bot/bot";
+import { ourTonAddress } from "@/lib/settings";
+import { NextRequest, NextResponse } from "next/server";
+import { noticeAdmins, sendMessages } from "../../../../bot/bot";
+
 const apiKey = process.env.TON_API;
-const limit = 10;
+const MAX_RETRIES = 20;
+const RETRY_INTERVAL_MS = 30 * 1000; // (30 se)
 
-// Eğer @toncenter/api kullanıyorsanız import edebilirsiniz:
-// import { Transaction } from '@toncenter/api';
+// Auxiliary function: To wait for the specified time
+function sleep(ms: number): Promise<void> {
+   return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-export async function GET(request: Request) {
-   const { searchParams } = new URL(request.url);
-   const oid = searchParams.get("oid");
-   if (!oid) {
-      console.error("Transaction ID (oid) is null or undefined.");
-      return new Response("Invalid transaction ID", { status: 400 });
+// Auxiliary function: to check the transaction on TON Blockchain
+async function checkTransactionOnChain(
+   address: string,
+   expectedId: string
+): Promise<boolean> {
+   if (!apiKey) {
+      console.error("TON API Key is not configured.");
+      return false;
+   }
+   if (!address) {
+      console.error("Target TON address (ourTonAddress) is not configured.");
+      return false;
+   }
+   if (!expectedId) {
+      console.error("Expected Transaction ID to match is missing.");
+      return false;
    }
 
-   async function kontrolEtVeBilgileriAl(
-      cuzdanAdresi: string,
-      beklenenSiparisId: string,
-      retryCount: number = 0,
-      maxRetries: number = 3
-   ): Promise<{ hash: string; comment: string } | null> {
-      // Dönüş tipini güncelledim
-      try {
-         const response = await fetch(
-            `https://toncenter.com/api/v2/getTransactions/${cuzdanAdresi}?api_key=${apiKey}&limit=${limit}`
-         );
-         const data = await response.json();
+   const trimmedExpectedId = expectedId.trim(); // Clean leading/trailing spaces
+   if (!trimmedExpectedId) {
+      console.error("Expected Transaction ID is empty after trimming.");
+      return false;
+   }
 
-         if (data.ok && data.result) {
-            for (const islem of data.result) {
-               const yorum = islem.comment;
-               if (yorum) {
-                  const yorumSatirlari = yorum.split("\n");
-                  if (yorumSatirlari.length >= 2) {
-                     const siparisIdSatiri = yorumSatirlari[1]?.trim();
-                     if (siparisIdSatiri === beklenenSiparisId) {
-                        return islem;
-                     }
-                  }
-               }
-            }
-            console.log(
-               `Beklenen Sipariş ID (${beklenenSiparisId}) ile eşleşen işlem bulunamadı. Deneme: ${
-                  retryCount + 1
-               }/${maxRetries}`
-            );
-            if (retryCount < maxRetries) {
-               await new Promise((resolve) => setTimeout(resolve, 30000)); // Tekrar deneme süresini kısalttım (30 saniye)
-               return kontrolEtVeBilgileriAl(
-                  cuzdanAdresi,
-                  beklenenSiparisId,
-                  retryCount + 1,
-                  maxRetries
-               );
-            }
-            return null;
-         } else {
-            console.log("İşlem listesi alınamadı veya bir hata oluştu."); // Hata mesajını düzelttim
-            return null;
+   const url = `https://tonapi.io/v2/blockchain/accounts/${address}/transactions?limit=10`;
+
+   try {
+      console.log(
+         `Checking transactions for address: ${address}, looking for transactionID: ${trimmedExpectedId}`
+      );
+      const response = await fetch(url, {
+         method: "GET",
+         headers: {
+            Authorization: `Bearer ${apiKey}`,
+            Accept: "application/json",
+         },
+      });
+
+      if (!response.ok) {
+         const errorBody = await response.text();
+         console.error(
+            `TonAPI Error: ${response.status} ${response.statusText}`,
+            errorBody
+         );
+         return false;
+      }
+
+      const data = await response.json();
+
+      if (!data || !Array.isArray(data.transactions)) {
+         console.error("TonAPI returned invalid data structure:", data);
+         return false;
+      }
+
+      console.log(`Fetched ${data.transactions.length} transactions.`);
+
+      for (const tx of data.transactions) {
+         let fullComment = "";
+         if (tx.in_msg?.decoded_body?.text) {
+            fullComment = tx.in_msg.decoded_body.text;
+         } else if (tx.in_msg?.message) {
+            // Some wallets/APIs may use different locations for the comment
+            fullComment = tx.in_msg.message;
          }
-      } catch (error) {
-         console.error("API error:", error);
-         return null;
+
+         if (fullComment) {
+            const trimmedFullComment = fullComment.trim(); // Clear entire comment too
+            console.log(`Found transaction comment: "${trimmedFullComment}"`);
+
+            // Check if the entire comment contains the expected ID
+            if (trimmedFullComment.includes(trimmedExpectedId)) {
+               console.log(
+                  `MATCH FOUND! Expected ID "${trimmedExpectedId}" is included in the comment. Tx Hash: ${tx.hash}`
+               );
+               return true; // Match found
+            }
+         }
+      }
+
+      console.log(
+         `No transaction comment found containing the ID "${trimmedExpectedId}" in the last 10 transactions.`
+      );
+      return false;
+   } catch (error) {
+      console.error(
+         "Error fetching or processing transactions from TonAPI:",
+         error
+      );
+      return false;
+   }
+}
+
+export async function GET(request: NextRequest) {
+   const { searchParams } = new URL(request.url);
+   const oid = searchParams.get("oid");
+
+   if (!oid || isNaN(Number(oid))) {
+      // oid must be numeric
+      console.error("Order ID (oid) is missing or invalid.");
+
+      return NextResponse.json(
+         {
+            success: false,
+            message: "Wrong request: Order ID (oid) is missing or invalid.",
+         },
+         { status: 400 }
+      );
+   }
+
+   const orderId = Number(oid);
+
+   // 1. Retrieve order and associated transaction information from database
+   const order = await prisma.order.findUnique({
+      where: {
+         id: orderId,
+      },
+      include: {
+         tonTransaction: true, // Include associated tonTransaction data
+      },
+   });
+
+   if (!order) {
+      console.error(`Order Not Found for ID: ${orderId}`);
+      return NextResponse.json(
+         {
+            success: false,
+            message: "404 Order Not Found.",
+         },
+         { status: 404 }
+      );
+   }
+
+   // 2. Get the transactionID that should match
+   const paymentIdToMatch = order.tonTransaction?.id;
+   if (!paymentIdToMatch) {
+      console.error(`Payment comment/ID not found for Order ID: ${orderId}`);
+      return NextResponse.json(
+         {
+            success: false,
+            message: "Payment identifier not found for this order.",
+         },
+         { status: 400 }
+      );
+   }
+
+   console.log(
+      `Verifying payment for Order ID: ${orderId}, expecting comment: "${paymentIdToMatch}"`
+   );
+
+   // 3. Verify the transaction on the Blockchain (with Retry mechanism)
+   let retries = 0;
+   while (retries < MAX_RETRIES) {
+      const found = await checkTransactionOnChain(
+         ourTonAddress,
+         paymentIdToMatch
+      );
+
+      if (found) {
+         // Match found!
+         console.log(`Payment confirmed for Order ID: ${orderId}`);
+         const updatedOrder = await prisma.order.update({
+            where: { id: orderId },
+            data: { status: "paid" },
+            include: {
+               tonTransaction: true,
+               product: true,
+            },
+         });
+         console.log('before notice');
+         await noticeAdmins(updatedOrder);
+         return NextResponse.json({ success: true });
+      }
+
+      // No matches found, wait before trying again
+      retries++;
+      if (retries < MAX_RETRIES) {
+         console.log(
+            `Attempt ${retries}/${MAX_RETRIES}: Match not found for Order ID ${orderId}. Retrying in ${
+               RETRY_INTERVAL_MS / 1000
+            } seconds...`
+         );
+         await sleep(RETRY_INTERVAL_MS);
       }
    }
 
-   const order = await prisma.order.findUnique({
-      where: {
-         id: Number(oid),
-      },
-      include: {
-         tonTransaction: true,
-      },
-   });
-   if (!order) {
-      console.error("Order Not Found.");
-      return new Response("Order Not Found.", { status: 404 });
-   }
-
-   // Implement a delay before checking
-   await new Promise((resolve) => setTimeout(resolve, 15000)); // Wait for 15 seconds
-   const transaction = await kontrolEtVeBilgileriAl(
-      ourTonAddress,
-      order.tonTransaction?.id ?? ""
+   // 4. Maximum number of attempts reached and no matches found
+   console.warn(
+      `Payment verification failed for Order ID: ${orderId} after ${MAX_RETRIES} retries.`
    );
 
-   if (transaction) {
-      const updatetOrder = await prisma.order.update({
-         where: { id: Number(oid) },
-         data: { status: "paid" },
-         include: {
-            tonTransaction: true,
-         },
-      });
-      noticeAdmins(
-         updatetOrder
-      );
-      return Response.json({ success: true, status: 200 });
-   } else {
-      noticeClient(`Ödeme Bulunamadı! Sipariş ID: ${order.id}`); // Hata mesajını düzelttim
-      return Response.json({
+   await sendMessages(
+      [order.userId],
+      `Payment verification failed for order ${orderId} after ${MAX_RETRIES} retries.`
+   );
+
+   return NextResponse.json(
+      {
          success: false,
-         status: 404,
-      });
-   }
+         message: "Transaction confirmation timed out.",
+      },
+      { status: 408 }
+   ); // 408 Request Timeout
 }

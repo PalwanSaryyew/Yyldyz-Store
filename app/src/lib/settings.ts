@@ -1,4 +1,4 @@
-import { ProductType } from "@prisma/client";
+import { ProductType } from "../../prisma/prismaSett";
 
 export const ourTonAddress = "UQDi3J28_M_iFFZ9IiukdK7adLkY5SXiMUgWFMFZNAktkDsO";
 export const toncoinId = 11419;

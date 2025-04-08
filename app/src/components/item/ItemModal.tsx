@@ -1,5 +1,4 @@
 "use client";
-import { Product } from "@prisma/client";
 import {
    useCartItem,
    useCurrency,
@@ -12,6 +11,7 @@ import { useState } from "react";
 import { cn } from "@/utils/tailwindMerge";
 import { getUser } from "@/lib/fetchs";
 import { webApp } from "@/lib/webApp";
+import { Product } from "../../../prisma/prismaSett";
 const ItemModal = ({ item, tonPrice }: { item: Product; tonPrice: number }) => {
    const isOpen = useWhicIsOpen((state) => state.opened);
    const change = useCartItem((state) => state.add);

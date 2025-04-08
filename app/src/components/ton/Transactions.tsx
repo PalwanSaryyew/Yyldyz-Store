@@ -26,7 +26,7 @@ const Transactions = () => {
             `/api/order?pid=${item?.id}&bid=${user?.id}&bsrnm=${user?.username}&rsrnm=${item?.receiver}&crrnc=${item?.currency}`
          ).then(async (response) => await response.json());
 
-         if (response.success) {
+         if (response.success && response.tonComment) {
             // preparing transaction
             const body = beginCell()
                .storeUint(0, 32)
@@ -47,14 +47,12 @@ const Transactions = () => {
             ) {
                try {
                   await tonConnectUI.sendTransaction(transaction);
-                  toogleModal(0);
                   fetch(`/api/ton?oid=${response.orderId}`);
-                  app.showAlert("Toleg amala asyryldy!", () => {
+                  app.showAlert("Töleg amala aşyryldy! Sargydyňyz mümkin bolan iň gysga wagtda gowşurylar.", () => {
                      app.openTelegramLink("https://t.me/officialstarstorebot");
                   }); // Success message
                } catch (transactionError: unknown) {
                   console.log(transactionError);
-                  toogleModal(0);
                   app.showAlert("Tölegde ýalňyşlyk ýüze çykdy");
                }
             }
@@ -70,6 +68,7 @@ const Transactions = () => {
       } catch (error) {
          app.showAlert("fetching error " + error); // Display error message to the user
       } finally {
+         toogleModal(0);
          setIsLoading(false);
       }
    }
