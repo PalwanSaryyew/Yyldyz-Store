@@ -1,8 +1,9 @@
 import { PaymentMethod, prisma } from "../../../../prisma/prismaSett";
 import { cmcApi } from "@/lib/fetchs";
 import { toncoinId } from "@/lib/settings";
-import { orderScript } from "../../../../bot/bot";
+
 import { rndmNmrGnrtr } from "@/utils/functions";
+import { orderScript } from "bot/src/funcs";
 
 export async function GET(request: Request) {
    const { searchParams } = new URL(request.url);

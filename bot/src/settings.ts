@@ -1,6 +1,7 @@
 import { PaymentMethod, ProductType, SummUpdate, User } from "@prisma/client";
 import { Bot } from "grammy";
 
+
 // envs
 export const bot = new Bot(process.env.BOT_TOKEN || "");
 export const adminidS = [process.env.PALWAN || "", process.env.HAJY || ""];
@@ -46,5 +47,21 @@ export const statusIcons = {
    yes: ["✔️", "☑️", "✅", "🟢"],
    no: ["❎", "✖️", "❌", "🔴", "⭕"],
    care: ["❕", "ℹ️", "❗", "‼️", "⁉️", "🟡", "⚠️", "🟠"],
-   wait: ['📦📨⌛🚫⛔🕥🚩⚡🛒📌📍⏳⌚⏱️⏲️'],
+   wait: [
+      "📦",
+      "📨",
+      "⌛",
+      "🚫",
+      "⛔",
+      "🕥",
+      "🚩",
+      "⚡",
+      "🛒",
+      "📌",
+      "📍",
+      "⏳",
+      "⌚",
+      "⏱️",
+      "⏲️",
+   ],
 };

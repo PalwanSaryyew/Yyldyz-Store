@@ -1,15 +1,14 @@
 "use client";
 
-import { webApp } from "@/lib/webApp";
+//import { webApp } from "@/lib/webApp";
 import { cn } from "@/utils/tailwindMerge";
-import { useHandleModal, useSumm, useUser } from "@/utils/UniStore";
+import { useHandleModal, useUser } from "@/utils/UniStore";
 import Image from "next/image";
 
 const Summ = () => {
    const isOpen = useHandleModal((state) => state.isOpen);
-   const close = useHandleModal((state) => state.toogleOpen);
+   // const close = useHandleModal((state) => state.toogleOpen);
    const user = useUser((state) => state.user);
-   const summ = useSumm((state) => state.summ);
 
    return (
       <div
@@ -36,19 +35,19 @@ const Summ = () => {
          <div className="rounded-md overflow-hidden mx-2">
             <div className="bg-slate-100 p-1 even:bg-gray-200 flex justify-between">
                <div>Belgi:</div>
-               <div>{summ?.nmbr}</div>
+               <div>{user?.nmbr}</div>
             </div>
             <div className="bg-slate-100 p-1 even:bg-gray-200 flex justify-between">
                <div>TMT:</div>
-               <div>{summ?.tmt}</div>
+               <div>{user?.tmt}</div>
             </div>
             <div className="bg-slate-100 p-1 even:bg-gray-200 flex justify-between">
                <div>USDT:</div>
-               <div>{summ?.usdt}</div>
+               <div>{user?.usdt}</div>
             </div>
          </div>
          <div className="w-full px-2 pt-2">
-            <button
+            {/* <button
                className="ring-inherit border-2 w-full py-2 bg-mainColor text-white rounded-lg flex items-center justify-center "
                onClick={async () => {
                   const app = await webApp();
@@ -57,7 +56,7 @@ const Summ = () => {
                }}
             >
                Hasaby Doldur
-            </button>
+            </button> */}
          </div>
       </div>
    );

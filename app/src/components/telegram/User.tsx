@@ -14,11 +14,19 @@ const User = () => {
          const { user } = initDataUnsafe;
 
          if (user && user.id && user.username && user.photo_url) {
+            const data = await fetch("/api/sum?uid=" + user?.id);
+            const {
+               sum,
+            }: { sum: { tmt: number; usdt: number; nmbt: string } } =
+               await data.json();
             setUserState({
                id: user.id,
                photo_url: user.photo_url,
                username: user.username,
                name: user.first_name,
+               nmbr: sum.nmbt,
+               usdt: sum.usdt,
+               tmt: sum.tmt,
             });
          }
       };
@@ -37,7 +45,6 @@ const User = () => {
             rel="preload"
             priority
          />
-         
       </div>
    );
 };

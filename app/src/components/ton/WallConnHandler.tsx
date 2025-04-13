@@ -21,9 +21,9 @@ const WallConnHandler = () => {
             return;
          }
          const response = await fetch("/api/walbal?adr=" + userFriendlyAddress);
-         const data: { ball: string; success: boolean } = await response.json();
+         const data: { balance: string; success: boolean } = await response.json();
          if (data.success) {
-            setFormattedAddress(Number(data.ball).toFixed(4) + " TON");
+            setFormattedAddress((data.balance).slice(0,6)+ " TON");
          } else {
             setFormattedAddress(
                `${userFriendlyAddress.slice(

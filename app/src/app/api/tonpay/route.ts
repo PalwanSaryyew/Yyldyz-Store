@@ -1,7 +1,7 @@
 import { prisma } from "../../../../prisma/prismaSett";
 import { ourTonAddress } from "@/lib/settings";
 import { NextRequest, NextResponse } from "next/server";
-import { noticeAdmins, sendMessages } from "../../../../bot/bot";
+import { noticeAdmins, sendMessages } from "bot/src/funcs";
 
 const apiKey = process.env.TON_API;
 const MAX_RETRIES = 20;
@@ -180,8 +180,11 @@ export async function GET(request: NextRequest) {
                product: true,
             },
          });
-         console.log('before notice');
-         await noticeAdmins(updatedOrder);
+         console.log("before notice");
+         await noticeAdmins(updatedOrder, [
+            process.env.PALWAN || "",
+            process.env.HAJY || "",
+         ]);
          return NextResponse.json({ success: true });
       }
 

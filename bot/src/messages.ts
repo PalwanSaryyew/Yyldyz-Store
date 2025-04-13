@@ -16,7 +16,6 @@ export function sspcsCaseMs(
 ) {
    return `${errMssg} \n ulanyjy: @${username} \n id-si: ${id} \n comandy: ${comad}`;
 }
-
 // order id block
 export function ordrIdMssgFnc(orderId: number) {
    return `<blockquote>Sargyt ID: ${orderId}</blockquote>`;
@@ -35,7 +34,7 @@ export function prdctDtlMssg(
       product,
       amount
    )} \n ${
-      !buyerId ? " " : `Kimden: ${userLink(Number(buyerId), byrName)} \n`
+      !buyerId ? "" : `Kimden: ${userLink(Number(buyerId), byrName)} \n `
    }${toWhere(
       product
    )}: ${receiver} \n Jemi töleg: <b>${total} ${currency} </b>`;

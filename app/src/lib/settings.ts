@@ -10,5 +10,5 @@ export const tgprem = "/prem";
 export const tgstar = "/";
 export const tktkjtn = "/tktjtn";
 export const uc = "/uc"; */
-export const paths: ProductType[] = ["/" as ProductType, "tgprem", "jtn", "uc"];
+export const paths: ProductType[] = ["star", "tgprem", "jtn", "uc"];
 export const tonProducts = ["/", "/prem"];

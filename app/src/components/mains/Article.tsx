@@ -1,16 +1,18 @@
-import ItemBox from "@/components/item/ItemBox";
-
-import { prisma } from "../../../prisma/prismaSett";
 import { cmcApi } from "@/lib/fetchs";
+import { prisma, ProductType } from "../../../prisma/prismaSett";
 import { toncoinId } from "@/lib/settings";
+import ItemBox from "../item/ItemBox";
 
-const Page = async () => {
+
+const Article = async ({ prdctNm }: { prdctNm: ProductType }) => {
    const data = await prisma.product.findMany({
       where: {
-         name: "uc",
+         name: prdctNm,
       },
    });
    const tonPrice = await cmcApi(toncoinId);
+   console.log(data, tonPrice);
+   
 
    return (
       <div className="flex flex-col gap-4 py-8 w-full items-center">
@@ -20,4 +22,4 @@ const Page = async () => {
       </div>
    );
 };
-export default Page;
+export default Article;

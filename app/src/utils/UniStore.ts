@@ -57,6 +57,9 @@ interface UserState {
       username: string;
       name: string;
       photo_url: string;
+      nmbr: string;
+      usdt: number;
+      tmt: number;
    } | null;
    add: (item: UserState["user"]) => void;
 }
@@ -75,7 +78,7 @@ export const useReceiver = create<ReceiverState>((set) => ({
    user: null,
    add: (user: ReceiverState["user"]) => set(() => ({ user: user })),
 }));
-interface SummState {
+/* interface SummState {
    summ: {
       nmbr: string;
       usdt: number;
@@ -86,4 +89,4 @@ interface SummState {
 export const useSumm = create<SummState>((set) => ({
    summ: null,
    add: (summ: SummState["summ"]) => set(() => ({ summ: summ })),
-}));
+})); */

@@ -1,12 +1,19 @@
 import ItemBox from "@/components/item/ItemBox";
-import { prisma } from "../../../prisma/prismaSett";
 import { cmcApi } from "@/lib/fetchs";
 import { toncoinId } from "@/lib/settings";
+import { prisma, ProductType } from "../../../prisma/prismaSett";
 
-const Page = async () => {
+interface ProductPageParams {
+   params: {
+      prdct: ProductType;
+   };
+}
+
+export default async function ProductPage({ params }: ProductPageParams) {
+   const { prdct } = params;
    const data = await prisma.product.findMany({
       where: {
-         name: "jtn",
+         name: prdct,
       },
    });
    const tonPrice = await cmcApi(toncoinId);
@@ -18,5 +25,4 @@ const Page = async () => {
          ))}
       </div>
    );
-};
-export default Page;
+}

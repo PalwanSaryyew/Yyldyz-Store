@@ -2,7 +2,7 @@
 export const err_1 = { m: "Error: code: 1", d: "Chat id gelmedi!" };
 export const err_2 = {
    m: "Error: code: 2",
-   d: "db dan user cagyrmak yada doretmek prosesinde",
+   d: "db dan user cagyrmak yada doretmek prosesinde yalnyslyk",
 };
 export const err_3 = {
    m: "Error: code: 3",

@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSumm, useUser } from "@/utils/UniStore";
+//import { useEffect, useState } from "react";
+import { useUser } from "@/utils/UniStore";
 import Sum from "./sum";
 
 const SumBox = () => {
    const user = useUser((state) => state.user);
-   const setSumm = useSumm((state) => state.add);
+   /* const setSumm = useSumm((state) => state.add);
    interface SumType {
       tmt: number;
       usdt: number;
@@ -17,21 +17,26 @@ const SumBox = () => {
    useEffect(() => {
       const getSum = async () => {
          const response = await fetch("/api/sum?uid=" + user?.id);
-         const data = await response.json();
-         setSum(data.sum);
+         const {
+            usdt,
+            tmt,
+            nmbr,
+         }: { usdt: number; tmt: number; nmbr: string } = await response.json();
+         const sum = { usdt, tmt, nmbr };
+         setSum(sum);
          setSumm({
-            nmbr: data.sum.nmbr,
-            usdt: data.sum.usdt,
-            tmt: data.sum.tmt,
+            usdt: sum.usdt,
+            tmt: sum.tmt,
+            nmbr: sum.nmbr,
          });
       };
 
       getSum();
-   }, [user?.id, setSumm]);
+   }, [user?.id, setSumm]); */
    return (
       <div className="flex -translate-x-12">
-         <Sum sum={sum?.tmt ?? 0} crrncy="TMT"/>
-         <Sum sum={sum?.usdt ?? 0} crrncy="USDT"/>
+         <Sum sum={user?.tmt } crrncy="TMT" />
+         <Sum sum={user?.usdt} crrncy="USDT" />
       </div>
    );
 };

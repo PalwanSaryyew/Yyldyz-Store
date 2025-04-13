@@ -24,6 +24,11 @@ import {
 } from "./src/messages";
 import { cnclAddSumBtnn, dlvrOrdrKybrd } from "./src/keyboards";
 
+export const tikTokStates = new Map<
+   string,
+   { adminId: number; mssgId: number; code: string; pass: string }
+>();
+
 /* start command */
 bot.command("test", async (ctx) => {
    ctx.reply(`${statusIcons.yes} \n ${statusIcons.no} \n ${statusIcons.care}`, {
@@ -116,10 +121,12 @@ bot.callbackQuery(/acceptOrder_(.+)/, async (ctx) => {
          mssgIds.push(data.message_id);
       }
       ordrMsgEdtStts.set(orderId, { mssgIds: mssgIds });
-      
-      const clntmssg =
-         statusIcons.care[1] +
-         " Sargydyňyz alyndy, mümkin bolan iň gysga wagtda size gowşurylar.";
+
+      const clntmssg = `${statusIcons.care[1]} ${
+         order.product.name === "jtn"
+            ? "Sargydyňyz alyndy, TikTok-dan gelmeli sms kody soralýança garaşyň!"
+            : "Sargydyňyz alyndy, mümkin bolan iň gysga wagtda size gowşurylar."
+      }`;
       await ctx.editMessageText(
          `${ordIdMssg} <blockquote expandable>${prdctDtlMssg(
             order.product.name,
@@ -205,7 +212,6 @@ bot.callbackQuery(/cancelOrder_(.+)/, async (ctx) => {
 bot.callbackQuery(/deliverOrder_(.+)/, async (ctx) => {
    const orderId = parseInt(ctx.match[1]);
    const adminId = ctx.from?.id;
-   const ordrMsgIds = ordrMsgEdtStts.get(orderId);
 
    // admin checker
    const isAdmin = adminValid(adminId);
@@ -229,7 +235,12 @@ bot.callbackQuery(/deliverOrder_(.+)/, async (ctx) => {
          show_alert: true,
       });
    }
-   if (!ordrMsgIds?.mssgIds) {
+   if (order.mssgIds.length > 0) {
+      ordrMsgEdtStts.set(order.id, { mssgIds: order.mssgIds });
+   }
+   const ordrMsgIds = ordrMsgEdtStts.get(orderId);
+
+   if (ordrMsgIds?.mssgIds === undefined) {
       console.log(err_7.d);
       return await ctx.answerCallbackQuery({
          text: err_7.m,
@@ -238,6 +249,15 @@ bot.callbackQuery(/deliverOrder_(.+)/, async (ctx) => {
    }
 
    try {
+      const keyboard = new InlineKeyboard()
+         .text("Tabşyrdym " + statusIcons.yes[2], "orderDelivered_" + order.id)
+         .row()
+         .text("Ýatyr " + statusIcons.no[2], "declineOrder_" + order.id)
+         .row()
+         .copyText(order.receiver, order.receiver);
+      if (order.product.name === "jtn") {
+         keyboard.row().text("SMS kody sora 💬", "askCode_" + order.id);
+      }
       for (let i = 0; i < adminidS.length; i++) {
          await ctx.api.editMessageText(
             adminidS[i],
@@ -251,23 +271,10 @@ bot.callbackQuery(/deliverOrder_(.+)/, async (ctx) => {
                   : order.product.priceUSDT,
                order.payment,
                order.userId
-            )}</blockquote> \n ${ordrDlvrng(adminidS[i], ctx.from.first_name)}`,
+            )}</blockquote> \n ${ordrDlvrng(adminId, ctx.from.first_name)}`,
             {
                reply_markup:
-                  order.courierid === adminidS[i]
-                     ? new InlineKeyboard()
-                          .text(
-                             "Tabşyrdym " + statusIcons.yes[2],
-                             "orderDelivered_" + order.id
-                          )
-                          .row()
-                          .text(
-                             "Ýatyr " + statusIcons.no[2],
-                             "declineOrder_" + order.id
-                          )
-                          .row()
-                          .copyText(order.receiver, order.receiver)
-                     : undefined,
+                  order.courierid === adminidS[i] ? keyboard : undefined,
                parse_mode: "HTML",
             }
          );
@@ -284,7 +291,6 @@ bot.callbackQuery(/deliverOrder_(.+)/, async (ctx) => {
 bot.callbackQuery(/declineOrder_(.+)/, async (ctx) => {
    const orderId = parseInt(ctx.match[1]);
    const adminId = ctx.from?.id;
-   const ordrMsgIds = ordrMsgEdtStts.get(orderId);
    // admin checker
    const isAdmin = adminValid(adminId);
    if (isAdmin.error) {
@@ -293,17 +299,11 @@ bot.callbackQuery(/declineOrder_(.+)/, async (ctx) => {
          show_alert: true,
       });
    }
-   if (!ordrMsgIds?.mssgIds) {
-      console.log(err_7.d);
-      return await ctx.answerCallbackQuery({
-         text: err_7.m,
-         show_alert: true,
-      });
-   }
+
    // order validator
    const order = await validator(
       orderId,
-      ["accepted", "delivering"],
+      ["accepted", "delivering", "paid"],
       "cancelled",
       adminId.toString()
    );
@@ -313,6 +313,18 @@ bot.callbackQuery(/declineOrder_(.+)/, async (ctx) => {
          show_alert: true,
       });
    }
+   if (order.mssgIds.length > 0) {
+      ordrMsgEdtStts.set(order.id, { mssgIds: order.mssgIds });
+   }
+   const ordrMsgIds = ordrMsgEdtStts.get(orderId);
+   if (!ordrMsgIds?.mssgIds) {
+      console.log(err_7.d);
+      return await ctx.answerCallbackQuery({
+         text: err_7.m,
+         show_alert: true,
+      });
+   }
+
    // user sum update
    const data =
       order.payment === "TMT"
@@ -595,7 +607,7 @@ bot.callbackQuery("complateAdd", async (ctx) => {
          ctx.api.sendMessage(
             adminId,
             `Hasap +/- \n Kimden: ${userLink(
-               Number(adminId),
+               Number(ctx.from.id),
                ctx.from.first_name
             )} \n Nirä: ${userLink(Number(user.id), user.walNum)} \n Mukdar: ${
                save.sum
@@ -648,17 +660,74 @@ bot.callbackQuery("declineAdd", async (ctx) => {
    return await ctx.editMessageText("Hasap goşmak ýatyryldy.");
 });
 
+bot.callbackQuery(/^askPass_(\w+)$/, (ctx) => {
+   //const adminId = ctx.from?.id;
+   const userID = ctx.match[1];
+   ctx.api.sendMessage(userID, "TikTok parolyňyzy ugradyň!");
+   ctx.deleteMessage();
+   ctx.answerCallbackQuery({
+      text: 'Parol soraldy',
+      show_alert: true
+   })
+});
+bot.callbackQuery(/^askCode_(\w+)$/, async (ctx) => {
+   //const adminId = ctx.from?.id;
+   const adminId = ctx.from.id;
+   const orderId = parseInt(ctx.match[1]);
+   // order validator
+   const order = await validator(
+      orderId,
+      ["delivering", "paid"],
+      "delivering",
+      adminId.toString()
+   );
+   if ("error" in order) {
+      return await ctx.answerCallbackQuery({
+         text: order.mssg,
+         show_alert: true,
+      });
+   }
+
+   const { message_id } = await ctx.api.sendMessage(
+      order.userId,
+      "TikTok-dan gelen SMS koduny ugradyň."
+   );
+   tikTokStates.set(order.userId, {
+      adminId: adminId,
+      mssgId: message_id,
+      code: "",
+      pass: "",
+   });
+   ctx.answerCallbackQuery({
+      text: 'Kod soraldy',
+      show_alert: true
+   })
+});
+bot.callbackQuery(/^wrongPass_(\w+)$/, (ctx) => {
+   //const adminId = ctx.from?.id;
+   const userID = ctx.match[1];
+   ctx.api.sendMessage(userID, "TikTok parolyňyz ýalňyş! Gaýtadan synanyşyň!");
+   tikTokStates.delete(userID);
+});
+bot.callbackQuery(/^tiktokDone_(\w+)$/, (ctx) => {
+   //const adminId = ctx.from?.id;
+   const userID = ctx.match[1];
+   tikTokStates.delete(userID);
+   ctx.deleteMessage();
+});
+
 bot.on("message", async (ctx) => {
    const userId = ctx.chat.id;
    const reasonState = reasonStates.get(userId);
    const sumAddState = sumAddStates.get(userId);
+   const tikTokState = tikTokStates.get(userId.toString());
    // order declining reason
    if (reasonState) {
       const reason = ctx.message.text;
       const ordIdmess = ordrIdMssgFnc(reasonState.orderId);
       await bot.api.sendMessage(
          reasonState.client,
-         ordIdmess + ordrDclngMssgFnc(userId.toString(), false, reason),
+         `${ordIdmess}  ${ordrDclngMssgFnc(userId.toString(), false, reason)}`,
          {
             parse_mode: "HTML",
          }
@@ -719,6 +788,39 @@ bot.on("message", async (ctx) => {
                   .text("Ýalňyş", "declineAdd")
                   .text("Dogry", "complateAdd"),
             }
+         );
+      }
+   } else if (tikTokState) {
+      if (tikTokState.code === "") {
+         tikTokState.code = ctx.message.text || "";
+         await ctx.api.sendMessage(tikTokState.adminId, tikTokState.code, {
+            reply_markup: new InlineKeyboard()
+               .copyText(tikTokState.code, tikTokState.code)
+               .row()
+               .text("Paroly Sora", "askPass_" + userId)
+               .row()
+               .text("Taýýar", "tiktokDone_" + userId),
+         });
+         await ctx.api.editMessageText(
+            userId,
+            tikTokState.mssgId,
+            "SMS kody ugradyldy eger TikTok hasabyňyzyň paroly bar bolsa, az salym garaşyň. Sizden soralandan soň, parolyňyzy hem ugradyň."
+         );
+         ctx.deleteMessage();
+      } else {
+         tikTokState.pass = ctx.message.text || "";
+         await ctx.api.sendMessage(tikTokState.adminId, tikTokState.pass, {
+            reply_markup: new InlineKeyboard()
+               .copyText(tikTokState.pass, tikTokState.pass)
+               .row()
+               .text("Parol Ýalňyş", "wrongPass_" + userId)
+               .row()
+               .text("Taýýar", "tiktokDone_" + userId),
+         });
+         await ctx.api.editMessageText(
+            userId,
+            tikTokState.mssgId,
+            "TikTok hasabybyňyzyň paroly dogry bolsa, sargydyňyz az salymdan tabşyrylar."
          );
       }
    }

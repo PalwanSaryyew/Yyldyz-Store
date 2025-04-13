@@ -1,12 +1,12 @@
-import { prisma } from "../../../prisma/prismaSett";
 import ItemBox from "@/components/item/ItemBox";
 import { cmcApi } from "@/lib/fetchs";
 import { toncoinId } from "@/lib/settings";
+import { prisma } from "../../../prisma/prismaSett";
 
 export default async function Home() {
    const data = await prisma.product.findMany({
       where: {
-         name: "star",
+         name: 'star',
       },
    });
    const tonPrice = await cmcApi(toncoinId);

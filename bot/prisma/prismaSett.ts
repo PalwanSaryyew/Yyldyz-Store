@@ -6,11 +6,11 @@ import {
    SummUpdate,
    TonTransaction,
    User,
+   PrismaPromise,
    OrderStatus,
    PaymentMethod,
    ProductType,
    UserRole,
-   PrismaPromise,
    $Enums,
    Prisma,
 } from "@prisma/client";
@@ -27,19 +27,21 @@ const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
 
 export {
    prisma,
+   OrderStatus,
+   PaymentMethod,
+   ProductType,
+   UserRole,
+   $Enums,
+   Prisma,
+};
+export type {
    Admin,
    Order,
    Product,
    SummUpdate,
    TonTransaction,
    User,
-   OrderStatus,
-   PaymentMethod,
-   ProductType,
-   UserRole,
    PrismaPromise,
-   $Enums,
-   Prisma,
 };
 
 if (process.env.NODE_ENV !== "production") globalThis.prismaGlobal = prisma;

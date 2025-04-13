@@ -1,10 +1,11 @@
+import { NextResponse } from "next/server";
 import { prisma } from "../../../../prisma/prismaSett";
 
-export async function GET(request: Request) {
+export async function GET(request: Request): Promise<NextResponse> {
    const { searchParams } = new URL(request.url);
    const uId = searchParams.get("uid");
    if (!uId) {
-      return Response.json({ success: false, message: "wrong request" });
+      return NextResponse.json({ success: false, message: "wrong request" });
    }
 
    const user = await prisma.user.findUnique({
@@ -14,10 +15,10 @@ export async function GET(request: Request) {
    });
 
    if (user) {
-      return Response.json({
+      return NextResponse.json({
          success: true,
          sum: { tmt: user.sumTmt, usdt: user.sumUsdt, nmbr: user.walNum },
       });
    }
-   return Response.json({ success: false, message: "user not found" });
+   return NextResponse.json({ success: false, message: "user not found" });
 }
